@@ -63,7 +63,7 @@ export const buildContainer = () => {
 
   // --- Modulo product ---
   const createProductUseCase = new CreateProductUseCase(productRepository, categoryRepository, photoRepository);
-  const updateProductUseCase = new UpdateProductUseCase(productRepository, categoryRepository, photoRepository);
+  const updateProductUseCase = new UpdateProductUseCase(productRepository, categoryRepository, photoRepository, deletePhotoUseCase);
   const deleteProductUseCase = new DeleteProductUseCase(productRepository);
   const restoreProductUseCase = new RestoreProductUseCase(productRepository, categoryRepository);
   const findAllProductsUseCase = new FindAllProductsUseCase(productRepository);

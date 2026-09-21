@@ -1,6 +1,7 @@
 import { AppError } from '../../../shared/errors/AppError';
 import { CategoryRepository } from '../../category/domain/category.repository';
 import { PhotoRepository } from '../../photo/domain/photo.repository';
+import { DeletePhotoUseCase } from '../../photo/application/delete-photo.use-case';
 import { Product } from '../domain/product.entity';
 import { ProductRepository } from '../domain/product.repository';
 import { findCategoryOrFail, findPhotosOrFail } from './product-references';
@@ -11,13 +12,16 @@ export class UpdateProductUseCase {
     private readonly productRepository: ProductRepository,
     private readonly categoryRepository: CategoryRepository,
     private readonly photoRepository: PhotoRepository,
-  ) {}
+    private readonly deletePhotoUseCase: DeletePhotoUseCase,
+  ) { }
 
   async execute(id: number, input: UpdateProductDto): Promise<Product> {
     const product = await this.productRepository.findById(id);
     if (!product) {
       throw new AppError('Producto no encontrado', 404);
     }
+
+    const previousPhotoIds = (product.photos ?? []).map((photo) => photo.id);
 
     if (input.name !== undefined) product.name = input.name;
     if (input.description !== undefined) product.description = input.description;
@@ -36,6 +40,16 @@ export class UpdateProductUseCase {
     }
 
     const saved = await this.productRepository.save(product);
+
+    if (input.photos !== undefined) {
+      const keptPhotoIds = new Set(input.photos.map((photo) => photo.id));
+      const removedPhotoIds = previousPhotoIds.filter((photoId) => !keptPhotoIds.has(photoId));
+
+      for (const photoId of removedPhotoIds) {
+        await this.deletePhotoUseCase.execute(photoId);
+      }
+    }
+
     const full = await this.productRepository.findById(saved.id);
     if (!full) {
       throw new AppError('Error al actualizar el producto', 500);

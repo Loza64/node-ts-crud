@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
 import 'reflect-metadata';
 import { validationMetadatasToSchemas } from 'class-validator-jsonschema';
 
@@ -10,11 +9,12 @@ import '../../modules/product/application/create-product.dto';
 import '../../modules/product/application/update-product.dto';
 import '../../modules/product/application/product-query.dto';
 
-const getClassTransformerMetadataStorage = () => {
+const getClassTransformerMetadataStorage = (): any => {
   const candidatePaths = ['class-transformer/cjs/storage', 'class-transformer/storage', 'class-transformer/esm5/storage'];
 
   for (const path of candidatePaths) {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       return require(path).defaultMetadataStorage;
     } catch {
       // siguiente ruta
