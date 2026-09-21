@@ -1,0 +1,36 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
+import 'reflect-metadata';
+import { validationMetadatasToSchemas } from 'class-validator-jsonschema';
+
+import '../dto/id-ref.dto';
+import '../pagination/pagination-query.dto';
+import '../../modules/category/application/create-category.dto';
+import '../../modules/category/application/update-category.dto';
+import '../../modules/product/application/create-product.dto';
+import '../../modules/product/application/update-product.dto';
+import '../../modules/product/application/product-query.dto';
+
+const getClassTransformerMetadataStorage = () => {
+  const candidatePaths = ['class-transformer/cjs/storage', 'class-transformer/storage', 'class-transformer/esm5/storage'];
+
+  for (const path of candidatePaths) {
+    try {
+      return require(path).defaultMetadataStorage;
+    } catch {
+      // siguiente ruta
+    }
+  }
+
+  return undefined;
+};
+
+export const buildSwaggerDefinitions = (): Record<string, unknown> => {
+  const classTransformerMetadataStorage = getClassTransformerMetadataStorage();
+
+  const schemas = validationMetadatasToSchemas({
+    refPointerPrefix: '#/components/schemas/',
+    ...(classTransformerMetadataStorage ? { classTransformerMetadataStorage } : {}),
+  });
+
+  return schemas as Record<string, unknown>;
+};
