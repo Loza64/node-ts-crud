@@ -7,5 +7,9 @@ services:
     restart: unless-stopped
     ports:
       - "${PORT}:${PORT}"
-    env_file:
-      - .env
+    networks:
+      - postgres_network
+
+networks:
+  postgres_network:
+    external: true
