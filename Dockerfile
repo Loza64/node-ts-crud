@@ -17,6 +17,8 @@ RUN pnpm build
 
 FROM node:22-alpine AS runner
 
+ENV NODE_ENV=production
+
 RUN addgroup -S nodejs && adduser -S nodets -G nodejs
 WORKDIR /app
 
