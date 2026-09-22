@@ -8,10 +8,6 @@ export interface PhotoEagerTransformation {
   height: number;
 }
 
-/**
- * Las fotos se eliminan de forma PERMANENTE (DB + Cloudinary), por eso esta
- * entidad extiende BaseEntity (sin deletedAt / soft delete).
- */
 @Entity('photos')
 export class Photo extends BaseEntity {
   @Column({ type: 'varchar' })
@@ -35,7 +31,6 @@ export class Photo extends BaseEntity {
   @Column({ type: 'int' })
   height: number = 0;
 
-  // bigint: TypeORM/pg lo devuelve como string, igual que en el ejemplo
   @Column({ type: 'bigint' })
   bytes: string = '0';
 
@@ -45,7 +40,6 @@ export class Photo extends BaseEntity {
   @Column({ type: 'jsonb', nullable: true })
   eager: PhotoEagerTransformation[] | null = null;
 
-  // Necesario para poder borrar el archivo en Cloudinary; nunca se expone.
   @Column({ type: 'varchar', name: 'public_id', select: false })
   publicId: string = '';
 

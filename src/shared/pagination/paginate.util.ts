@@ -27,7 +27,6 @@ export interface PaginatedResult<T> {
   pagination: PageMeta;
 }
 
-
 export const buildPaginatedResponse = <T, R>(
   { items, meta }: Page<T>,
   mapper: (item: T) => R,

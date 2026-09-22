@@ -4,12 +4,6 @@ import { CategoryRepository } from '../../category/domain/category.repository';
 import { Photo } from '../../photo/domain/photo.entity';
 import { PhotoRepository } from '../../photo/domain/photo.repository';
 
-/**
- * Reglas de negocio compartidas por crear/actualizar producto sobre las
- * referencias que llegan como { id }:
- *  - la categoria debe existir y NO estar eliminada
- *  - todas las fotos deben existir
- */
 export const findCategoryOrFail = async (
   categoryRepository: CategoryRepository,
   categoryId: number,

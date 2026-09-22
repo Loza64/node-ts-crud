@@ -14,7 +14,6 @@ import {
 } from 'class-validator';
 import { IdRefDto } from '../../../shared/dto/id-ref.dto';
 
-
 export class CreateProductDto {
   @IsString()
   @MinLength(2)
@@ -34,13 +33,11 @@ export class CreateProductDto {
   @IsBoolean()
   in_stock?: boolean;
 
-  // referencia a una categoria existente: category: { id }
   @IsObject()
   @ValidateNested()
   @Type(() => IdRefDto)
   category!: IdRefDto;
 
-  // referencia a fotos ya subidas via POST /photos: photos: [{ id }, { id }...]
   @IsOptional()
   @IsArray()
   @ArrayUnique((photo: IdRefDto) => photo?.id, { message: 'photos no puede contener ids repetidos' })

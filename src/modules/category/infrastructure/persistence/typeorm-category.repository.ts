@@ -21,8 +21,6 @@ export class TypeOrmCategoryRepository implements CategoryRepository {
   findAll({ page, pageSize, search, status }: SoftDeleteListParams): Promise<Page<Category>> {
     const base: FindOptionsWhere<Category> = { ...deletedAtCondition(status) };
 
-    // La busqueda es un OR entre name y description; el resto de filtros
-    // (estado) se repite en cada rama del OR.
     const where: FindOptionsWhere<Category>[] = search
       ? [
           { ...base, name: iLikeContains(search) },

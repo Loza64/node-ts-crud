@@ -49,10 +49,10 @@ export class CloudinaryFileStorage implements FileStorage {
 
   async setTags(publicId: string, tags: string[], resourceType = 'image'): Promise<void> {
     if (tags.length) {
-      // Admin API: reemplaza los tags actuales por los indicados.
+
       await cloudinary.api.update(publicId, { tags, resource_type: resourceType });
     } else {
-      // api.update ignora una lista vacia, asi que para "quitar todos" hay que usar esta llamada.
+
       await cloudinary.uploader.remove_all_tags([publicId], { resource_type: resourceType });
     }
   }

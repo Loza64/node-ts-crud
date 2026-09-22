@@ -10,7 +10,7 @@ export class TypeOrmPhotoRepository implements PhotoRepository {
   private readonly repo: Repository<Photo> = AppDataSource.getRepository(Photo);
 
   findAll({ page, pageSize, search }: ListParams): Promise<Page<Photo>> {
-    // Busqueda: OR entre nombre original del archivo y cualquiera de sus tags.
+
     const where: FindOptionsWhere<Photo>[] = search
       ? [
           { originalFilename: iLikeContains(search) },

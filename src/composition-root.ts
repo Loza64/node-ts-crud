@@ -27,12 +27,11 @@ import { FindCategoryByIdUseCase } from './modules/category/application/find-cat
 import { CategoryController } from './modules/category/infrastructure/http/category.controller';
 
 export const buildContainer = () => {
-  // --- Repositorios TypeORM compartidos entre modulos ---
+
   const categoryRepository = new TypeOrmCategoryRepository();
   const photoRepository = new TypeOrmPhotoRepository();
   const productRepository = new TypeOrmProductRepository();
 
-  // --- Modulo photo (Cloudinary) ---
   const fileStorage = new CloudinaryFileStorage();
   const uploadFilesUseCase = new UploadFilesUseCase(fileStorage, photoRepository, env.CLOUDINARY_FOLDER);
   const findAllPhotosUseCase = new FindAllPhotosUseCase(photoRepository);
@@ -45,7 +44,6 @@ export const buildContainer = () => {
     deletePhotoUseCase,
   );
 
-  // --- Modulo category ---
   const createCategoryUseCase = new CreateCategoryUseCase(categoryRepository);
   const updateCategoryUseCase = new UpdateCategoryUseCase(categoryRepository);
   const deleteCategoryUseCase = new DeleteCategoryUseCase(categoryRepository, productRepository);
@@ -61,7 +59,6 @@ export const buildContainer = () => {
     findCategoryByIdUseCase,
   );
 
-  // --- Modulo product ---
   const createProductUseCase = new CreateProductUseCase(productRepository, categoryRepository, photoRepository);
   const updateProductUseCase = new UpdateProductUseCase(productRepository, categoryRepository, photoRepository, deletePhotoUseCase);
   const deleteProductUseCase = new DeleteProductUseCase(productRepository);

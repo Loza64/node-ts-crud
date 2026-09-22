@@ -18,7 +18,6 @@ export class RestoreProductUseCase {
       throw new AppError('El producto no está eliminado', 409);
     }
 
-    // Regla: un producto activo siempre debe tener una categoria activa.
     const category = await this.categoryRepository.findById(product.category.id);
     if (!category) {
       throw new AppError(

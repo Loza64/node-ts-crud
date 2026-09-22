@@ -14,11 +14,9 @@ const getClassTransformerMetadataStorage = (): any => {
 
   for (const path of candidatePaths) {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
+
       return require(path).defaultMetadataStorage;
-    } catch {
-      // siguiente ruta
-    }
+    } catch {}
   }
 
   return undefined;

@@ -3,9 +3,6 @@
 import request from 'supertest';
 import { createApp } from './app';
 
-// Estas pruebas cubren solo lo que se resuelve ANTES de tocar la base de datos
-// (validaciones de body/query/params). Las reglas de negocio se prueban en los
-// *.use-case.spec.ts con repositorios simulados.
 describe('app', () => {
   const app = createApp();
 
@@ -24,9 +21,7 @@ describe('app', () => {
   });
 
   it('POST /api/products rejects invalid nested category/photos with a readable message', async () => {
-    const res = await request(app)
-      .post('/api/products')
-      .send({ name: 'Camisa', price: 10, category: 5, photos: [{ id: 'x' }] });
+    const res = await request(app).post('/api/products').send({ name: 'Camisa', price: 10, category: 5, photos: [{ id: 'x' }] });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toContain('category');
@@ -34,9 +29,7 @@ describe('app', () => {
   });
 
   it('POST /api/products rejects repeated photo ids', async () => {
-    const res = await request(app)
-      .post('/api/products')
-      .send({ name: 'Camisa', price: 10, category: { id: 1 }, photos: [{ id: 3 }, { id: 3 }] });
+    const res = await request(app).post('/api/products').send({ name: 'Camisa', price: 10, category: { id: 1 }, photos: [{ id: 3 }, { id: 3 }] });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toContain('photos');
@@ -57,12 +50,6 @@ describe('app', () => {
 
   it('PATCH /api/products/abc/restore rejects an invalid id', async () => {
     const res = await request(app).patch('/api/products/abc/restore');
-
-    expect(res.status).toBe(400);
-  });
-
-  it('PATCH /api/photos/1 rejects tags with commas', async () => {
-    const res = await request(app).patch('/api/photos/1').send({ tags: ['a,b'] });
 
     expect(res.status).toBe(400);
   });

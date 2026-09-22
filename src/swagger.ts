@@ -1,6 +1,8 @@
 import swaggerJsdoc from 'swagger-jsdoc';
 import { buildSwaggerDefinitions } from './shared/swagger/schemas';
 
+const isProd = process.env.NODE_ENV === 'production';
+
 const options: swaggerJsdoc.Options = {
   definition: {
     openapi: '3.0.0',
@@ -15,7 +17,11 @@ const options: swaggerJsdoc.Options = {
       schemas: buildSwaggerDefinitions(),
     },
   },
-  apis: ['./src/modules/**/infrastructure/http/*.routes.ts'],
+  apis: [
+    isProd
+      ? './build/modules/**/infrastructure/http/*.routes.js'
+      : './src/modules/**/infrastructure/http/*.routes.ts',
+  ],
 };
 
 export const swaggerSpec = swaggerJsdoc(options);

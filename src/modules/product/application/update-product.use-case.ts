@@ -13,7 +13,7 @@ export class UpdateProductUseCase {
     private readonly categoryRepository: CategoryRepository,
     private readonly photoRepository: PhotoRepository,
     private readonly deletePhotoUseCase: DeletePhotoUseCase,
-  ) { }
+  ) {}
 
   async execute(id: number, input: UpdateProductDto): Promise<Product> {
     const product = await this.productRepository.findById(id);

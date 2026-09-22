@@ -55,8 +55,6 @@ export class TypeOrmProductRepository implements ProductRepository {
       ...(categoryId ? { category: { id: categoryId } } : {}),
     };
 
-    // La busqueda es un OR entre name y description; el resto de filtros
-    // (estado, categoria) se repite en cada rama del OR.
     const where: FindOptionsWhere<Product>[] = search
       ? [
           { ...base, name: iLikeContains(search) },
@@ -86,7 +84,6 @@ export class TypeOrmProductRepository implements ProductRepository {
     });
   }
 
-  // withDeleted=false (default): solo cuentan los productos activos.
   existsByCategory(categoryId: number): Promise<boolean> {
     return this.repo.exists({ where: { category: { id: categoryId } } });
   }

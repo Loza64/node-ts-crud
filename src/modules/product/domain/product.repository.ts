@@ -7,9 +7,9 @@ export interface ProductFindAllParams extends SoftDeleteListParams {
 
 export interface ProductRepository {
   findAll(params: ProductFindAllParams): Promise<Page<Product>>;
-  /** Por defecto ignora los eliminados; con withDeleted=true los incluye. */
+
   findById(id: number, withDeleted?: boolean): Promise<Product | null>;
-  /** true si la categoria tiene al menos un producto ACTIVO (no eliminado). */
+
   existsByCategory(categoryId: number): Promise<boolean>;
   save(product: Product): Promise<Product>;
   softDelete(id: number): Promise<void>;

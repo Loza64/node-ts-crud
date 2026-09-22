@@ -14,7 +14,6 @@ import {
 } from 'class-validator';
 import { IdRefDto } from '../../../shared/dto/id-ref.dto';
 
-/** Mismo contrato que CreateProductDto pero todos los campos son opcionales. */
 export class UpdateProductDto {
   @IsOptional()
   @IsString()
@@ -42,7 +41,6 @@ export class UpdateProductDto {
   @Type(() => IdRefDto)
   category?: IdRefDto;
 
-  // Si se envia, REEMPLAZA el conjunto de fotos ([] las quita todas).
   @IsOptional()
   @IsArray()
   @ArrayUnique((photo: IdRefDto) => photo?.id, { message: 'photos no puede contener ids repetidos' })

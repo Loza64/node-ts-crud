@@ -11,11 +11,9 @@ export class Product extends SoftDeletableEntity {
   @Column({ type: 'text', nullable: true })
   description: string | null = null;
 
-  // decimal: TypeORM/pg lo devuelve como string ("17348943.40")
   @Column({ type: 'decimal', precision: 14, scale: 2 })
   price: string = '0';
 
-  // nombre en snake_case a proposito, para respetar el contrato pedido
   @Column({ type: 'boolean', default: true, name: 'in_stock' })
   in_stock: boolean = true;
 
@@ -23,8 +21,6 @@ export class Product extends SoftDeletableEntity {
   @JoinColumn({ name: 'categoryId' })
   category!: Category;
 
-  // Sin onDelete propio: la tabla intermedia usa ON DELETE CASCADE, asi que al
-  // eliminar una foto (permanente) se desasocia automaticamente de sus productos.
   @ManyToMany(() => Photo)
   @JoinTable({
     name: 'product_photos',
