@@ -15,5 +15,5 @@ export const AppDataSource = new DataSource({
   synchronize: env.isDev,
   logging: env.isDev,
   entities: [Category, Product, Photo],
-  migrations: ['dist/shared/database/migrations/*.js'],
+  migrations: ['build/shared/database/migrations/*.js'],
 });
