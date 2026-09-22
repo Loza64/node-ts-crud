@@ -27,6 +27,6 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 
 USER nodets
-EXPOSE 4000
+EXPOSE 4100
 
 CMD ["node", "build/index"]
