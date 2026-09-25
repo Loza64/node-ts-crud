@@ -18,6 +18,10 @@ export class DeletePhotoUseCase {
     try {
       await this.fileStorage.destroy(photo.publicId, photo.resourceType);
     } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+
       errorLog('No se pudo eliminar la foto %s en Cloudinary: %O', id, err);
       throw new AppError('No se pudo eliminar el archivo en Cloudinary', 502);
     }

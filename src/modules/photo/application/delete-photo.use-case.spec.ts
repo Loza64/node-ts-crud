@@ -1,6 +1,7 @@
 /// <reference types="jest" />
 
 import { FileStorage } from '../../../shared/cloudinary/cloudinary.port';
+import { AppError } from '../../../shared/errors/AppError';
 import { Photo } from '../domain/photo.entity';
 import { PhotoRepository } from '../domain/photo.repository';
 import { DeletePhotoUseCase } from './delete-photo.use-case';
@@ -39,6 +40,14 @@ describe('DeletePhotoUseCase (permanent delete)', () => {
     fileStorage.destroy.mockRejectedValue(new Error('network'));
 
     await expect(useCase.execute(8)).rejects.toMatchObject({ statusCode: 502 });
+    expect(photoRepository.hardDelete).not.toHaveBeenCalled();
+  });
+
+  it('propagates the AppError from the adapter as-is (e.g. 503 when the circuit breaker is open)', async () => {
+    photoRepository.findByIdWithPublicId.mockResolvedValue(photo);
+    fileStorage.destroy.mockRejectedValue(new AppError('Servicio no disponible', 503));
+
+    await expect(useCase.execute(8)).rejects.toMatchObject({ statusCode: 503 });
     expect(photoRepository.hardDelete).not.toHaveBeenCalled();
   });
 });
