@@ -3,6 +3,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  Index,
 } from 'typeorm';
 
 export abstract class BaseEntity {
@@ -17,6 +18,7 @@ export abstract class BaseEntity {
 }
 
 export abstract class SoftDeletableEntity extends BaseEntity {
+  @Index({ where: '"deletedAt" IS NULL' })
   @DeleteDateColumn({ type: 'timestamptz', nullable: true, default: null })
   deletedAt: Date | null = null;
 }

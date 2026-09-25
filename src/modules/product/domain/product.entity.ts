@@ -1,9 +1,10 @@
-import { Column, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, JoinTable, ManyToMany, ManyToOne } from 'typeorm';
 import { SoftDeletableEntity } from '../../../shared/database/base.entity';
 import { Category } from '../../category/domain/category.entity';
 import { Photo } from '../../photo/domain/photo.entity';
 
 @Entity('products')
+@Index(['category', 'deletedAt'])
 export class Product extends SoftDeletableEntity {
   @Column({ type: 'varchar', length: 150 })
   name: string = '';

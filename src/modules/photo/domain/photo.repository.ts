@@ -11,5 +11,14 @@ export interface PhotoRepository {
   saveMany(photos: Photo[]): Promise<Photo[]>;
   updateTags(id: number, tags: string[]): Promise<void>;
 
+  /** Marca las fotos dadas como "attached" (asociadas a un producto) con la marca de tiempo actual. */
+  markAttached(ids: number[]): Promise<void>;
+
+  /**
+   * Fotos "pending" (nunca asociadas) creadas antes de `olderThan`.
+   * Son las candidatas seguras para el job de limpieza de huérfanas.
+   */
+  findOrphans(olderThan: Date): Promise<Photo[]>;
+
   hardDelete(id: number): Promise<void>;
 }

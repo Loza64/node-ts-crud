@@ -19,9 +19,14 @@ export const env = {
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET ?? '',
   CLOUDINARY_FOLDER: process.env.CLOUDINARY_FOLDER ?? 'uploads',
 
-  // Circuit breaker (opossum) defaults for outbound calls to third-party services.
   CB_TIMEOUT_MS: Number(process.env.CB_TIMEOUT_MS) || 8000,
   CB_ERROR_THRESHOLD_PERCENTAGE: Number(process.env.CB_ERROR_THRESHOLD_PERCENTAGE) || 50,
   CB_RESET_TIMEOUT_MS: Number(process.env.CB_RESET_TIMEOUT_MS) || 15000,
   CB_VOLUME_THRESHOLD: Number(process.env.CB_VOLUME_THRESHOLD) || 5,
+
+  // Job de limpieza de fotos "pending" (subidas pero nunca asociadas a un producto).
+  // Expresión cron estándar de 5 campos; default: cada hora, al minuto 0.
+  ORPHAN_PHOTOS_CRON: process.env.ORPHAN_PHOTOS_CRON ?? '0 * * * *',
+  // Una foto "pending" más nueva que esto NUNCA se borra (le da tiempo al usuario a terminar el formulario).
+  ORPHAN_PHOTOS_MIN_AGE_MINUTES: Number(process.env.ORPHAN_PHOTOS_MIN_AGE_MINUTES) || 60,
 };

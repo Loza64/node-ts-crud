@@ -6,6 +6,7 @@ import { UploadFilesUseCase } from '../../application/upload-files.use-case';
 import { FindAllPhotosUseCase } from '../../application/find-all-photos.use-case';
 import { FindPhotoByIdUseCase } from '../../application/find-photo-by-id.use-case';
 import { DeletePhotoUseCase } from '../../application/delete-photo.use-case';
+import { CleanupOrphanPhotosUseCase } from '../../application/cleanup-orphan-photos.use-case';
 
 export class PhotoController {
   constructor(
@@ -13,6 +14,7 @@ export class PhotoController {
     private readonly findAllPhotosUseCase: FindAllPhotosUseCase,
     private readonly findPhotoByIdUseCase: FindPhotoByIdUseCase,
     private readonly deletePhotoUseCase: DeletePhotoUseCase,
+    private readonly cleanupOrphanPhotosUseCase: CleanupOrphanPhotosUseCase,
   ) { }
 
   upload = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -55,6 +57,15 @@ export class PhotoController {
       const id = Number(req.params.id);
       await this.deletePhotoUseCase.execute(id);
       res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  cleanupOrphans = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await this.cleanupOrphanPhotosUseCase.execute();
+      res.status(200).json({ data: result });
     } catch (err) {
       next(err);
     }

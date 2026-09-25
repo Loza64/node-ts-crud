@@ -1,4 +1,5 @@
 import { AppError } from '../../../shared/errors/AppError';
+import { errorLog } from '../../../shared/logger/logger';
 import { CategoryRepository } from '../../category/domain/category.repository';
 import { PhotoRepository } from '../../photo/domain/photo.repository';
 import { DeletePhotoUseCase } from '../../photo/application/delete-photo.use-case';
@@ -42,12 +43,13 @@ export class UpdateProductUseCase {
     const saved = await this.productRepository.save(product);
 
     if (input.photos !== undefined) {
-      const keptPhotoIds = new Set(input.photos.map((photo) => photo.id));
-      const removedPhotoIds = previousPhotoIds.filter((photoId) => !keptPhotoIds.has(photoId));
+      const keptPhotoIds = input.photos.map((photo) => photo.id);
+      await this.photoRepository.markAttached(keptPhotoIds);
 
-      for (const photoId of removedPhotoIds) {
-        await this.deletePhotoUseCase.execute(photoId);
-      }
+      const keptPhotoIdsSet = new Set(keptPhotoIds);
+      const removedPhotoIds = previousPhotoIds.filter((photoId) => !keptPhotoIdsSet.has(photoId));
+
+      await this.deleteRemovedPhotos(id, removedPhotoIds);
     }
 
     const full = await this.productRepository.findById(saved.id);
@@ -55,5 +57,37 @@ export class UpdateProductUseCase {
       throw new AppError('Error al actualizar el producto', 500);
     }
     return full;
+  }
+
+  private async deleteRemovedPhotos(productId: number, photoIds: number[]): Promise<void> {
+    if (!photoIds.length) return;
+
+    const results = await Promise.allSettled(
+      photoIds.map((photoId) => this.deletePhotoUseCase.execute(photoId)),
+    );
+
+    const failed = results
+      .map((result, index) => ({ result, photoId: photoIds[index] }))
+      .filter(
+        (entry): entry is { result: PromiseRejectedResult; photoId: number } =>
+          entry.result.status === 'rejected',
+      );
+
+    if (!failed.length) return;
+
+    failed.forEach(({ result, photoId }) => {
+      errorLog(
+        'No se pudo eliminar la foto %s tras actualizar el producto %s: %O',
+        photoId,
+        productId,
+        result.reason,
+      );
+    });
+
+    throw new AppError(
+      `El producto se actualizó, pero no se pudieron eliminar ${failed.length} foto(s) ` +
+        `desasociadas (id: ${failed.map((f) => f.photoId).join(', ')}). Intenta borrarlas de nuevo.`,
+      502,
+    );
   }
 }

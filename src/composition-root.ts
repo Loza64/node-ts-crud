@@ -6,6 +6,7 @@ import { UploadFilesUseCase } from './modules/photo/application/upload-files.use
 import { FindAllPhotosUseCase } from './modules/photo/application/find-all-photos.use-case';
 import { FindPhotoByIdUseCase } from './modules/photo/application/find-photo-by-id.use-case';
 import { DeletePhotoUseCase } from './modules/photo/application/delete-photo.use-case';
+import { CleanupOrphanPhotosUseCase } from './modules/photo/application/cleanup-orphan-photos.use-case';
 import { PhotoController } from './modules/photo/infrastructure/http/photo.controller';
 
 import { TypeOrmProductRepository } from './modules/product/infrastructure/persistence/typeorm-product.repository';
@@ -37,11 +38,17 @@ export const buildContainer = () => {
   const findAllPhotosUseCase = new FindAllPhotosUseCase(photoRepository);
   const findPhotoByIdUseCase = new FindPhotoByIdUseCase(photoRepository);
   const deletePhotoUseCase = new DeletePhotoUseCase(photoRepository, fileStorage);
+  const cleanupOrphanPhotosUseCase = new CleanupOrphanPhotosUseCase(
+    photoRepository,
+    deletePhotoUseCase,
+    env.ORPHAN_PHOTOS_MIN_AGE_MINUTES,
+  );
   const photoController = new PhotoController(
     uploadFilesUseCase,
     findAllPhotosUseCase,
     findPhotoByIdUseCase,
     deletePhotoUseCase,
+    cleanupOrphanPhotosUseCase,
   );
 
   const createCategoryUseCase = new CreateCategoryUseCase(categoryRepository);
@@ -78,6 +85,7 @@ export const buildContainer = () => {
     photoController,
     productController,
     categoryController,
+    cleanupOrphanPhotosUseCase,
   };
 };
 

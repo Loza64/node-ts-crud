@@ -79,6 +79,22 @@ export const buildPhotoRouter = (controller: PhotoController): Router => {
 
   /**
    * @swagger
+   * /api/photos/cleanup-orphans:
+   *   post:
+   *     summary: Dispara manualmente la limpieza de fotos "pending" (subidas y nunca asociadas a un producto)
+   *     description: >
+   *       Borra de Cloudinary y de la base de datos las fotos que llevan más tiempo del configurado
+   *       (ORPHAN_PHOTOS_MIN_AGE_MINUTES) sin quedar asociadas a ningún producto. El mismo trabajo
+   *       corre automáticamente por cron; este endpoint es para forzarlo (operación/pruebas).
+   *     tags: [Photos]
+   *     responses:
+   *       200:
+   *         description: Resultado de la limpieza (escaneadas, borradas, fallidas)
+   */
+  router.post('/cleanup-orphans', controller.cleanupOrphans);
+
+  /**
+   * @swagger
    * /api/photos/{id}:
    *   delete:
    *     summary: Elimina una foto

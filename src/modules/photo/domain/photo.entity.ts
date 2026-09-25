@@ -43,6 +43,18 @@ export class Photo extends BaseEntity {
   @Column({ type: 'varchar', name: 'public_id', select: false })
   publicId: string = '';
 
+  /**
+   * null  -> "pending": subida a Cloudinary pero aún no asociada a ningún producto.
+   * Date  -> "attached": el momento en que quedó asociada por última vez.
+   * Las fotos "pending" con más de cierta antigüedad son candidatas a limpieza automática.
+   */
+  @Column({ type: 'timestamptz', name: 'attached_at', nullable: true, default: null })
+  attachedAt: Date | null = null;
+
+  get isPending(): boolean {
+    return this.attachedAt === null;
+  }
+
   toPublic() {
     return {
       id: this.id,

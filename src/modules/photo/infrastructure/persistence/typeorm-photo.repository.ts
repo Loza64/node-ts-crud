@@ -1,4 +1,4 @@
-import { FindOptionsWhere, In, Raw, Repository } from 'typeorm';
+import { FindOptionsWhere, In, IsNull, LessThan, Raw, Repository } from 'typeorm';
 import { AppDataSource } from '../../../../shared/database/data-source';
 import { paginateRepository } from '../../../../shared/pagination/paginate.util';
 import { ListParams, Page } from '../../../../shared/pagination/pagination.types';
@@ -53,6 +53,18 @@ export class TypeOrmPhotoRepository implements PhotoRepository {
 
   async updateTags(id: number, tags: string[]): Promise<void> {
     await this.repo.update(id, { tags });
+  }
+
+  async markAttached(ids: number[]): Promise<void> {
+    if (!ids.length) return;
+    await this.repo.update({ id: In(ids) }, { attachedAt: new Date() });
+  }
+
+  findOrphans(olderThan: Date): Promise<Photo[]> {
+    return this.repo.find({
+      where: { attachedAt: IsNull(), createdAt: LessThan(olderThan) },
+      order: { createdAt: 'ASC' },
+    });
   }
 
   async hardDelete(id: number): Promise<void> {
