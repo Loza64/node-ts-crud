@@ -30,10 +30,6 @@ export class CreateProductUseCase {
 
     const saved = await this.productRepository.save(product);
 
-    if (photos.length) {
-      await this.photoRepository.markAttached(photos.map((photo) => photo.id));
-    }
-
     const full = await this.productRepository.findById(saved.id);
     if (!full) {
       throw new AppError('Error al crear el producto', 500);

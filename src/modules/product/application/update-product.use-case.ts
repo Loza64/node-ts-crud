@@ -44,8 +44,6 @@ export class UpdateProductUseCase {
 
     if (input.photos !== undefined) {
       const keptPhotoIds = input.photos.map((photo) => photo.id);
-      await this.photoRepository.markAttached(keptPhotoIds);
-
       const keptPhotoIdsSet = new Set(keptPhotoIds);
       const removedPhotoIds = previousPhotoIds.filter((photoId) => !keptPhotoIdsSet.has(photoId));
 

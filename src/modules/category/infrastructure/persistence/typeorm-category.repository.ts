@@ -18,8 +18,8 @@ const BASE_SELECT = {
 export class TypeOrmCategoryRepository implements CategoryRepository {
   private readonly repo: Repository<Category> = AppDataSource.getRepository(Category);
 
-  findAll({ page, pageSize, search, status }: SoftDeleteListParams): Promise<Page<Category>> {
-    const base: FindOptionsWhere<Category> = { ...deletedAtCondition(status) };
+  findAll({ page, pageSize, search, deleted }: SoftDeleteListParams): Promise<Page<Category>> {
+    const base: FindOptionsWhere<Category> = { ...deletedAtCondition(deleted) };
 
     const where: FindOptionsWhere<Category>[] = search
       ? [
@@ -35,7 +35,7 @@ export class TypeOrmCategoryRepository implements CategoryRepository {
         where,
         select: BASE_SELECT,
         order: { id: 'DESC' },
-        withDeleted: status !== 'active',
+        withDeleted: deleted,
       },
     );
   }

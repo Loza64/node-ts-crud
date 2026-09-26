@@ -1,7 +1,3 @@
-export type DeletedStatus = 'active' | 'deleted' | 'all';
-
-export const DELETED_STATUSES: readonly DeletedStatus[] = ['active', 'deleted', 'all'];
-
 export interface PageMeta {
   page: number;
   pageSize: number;
@@ -21,5 +17,6 @@ export interface ListParams {
 }
 
 export interface SoftDeleteListParams extends ListParams {
-  status: DeletedStatus;
+  /** true -> solo eliminados (soft-deleted); false/undefined -> solo activos. */
+  deleted: boolean;
 }

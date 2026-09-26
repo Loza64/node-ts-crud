@@ -23,6 +23,12 @@ export class CleanupOrphanPhotosUseCase {
       return { scanned: 0, deleted: 0, failed: [] };
     }
 
+    serverLog(
+      'Limpieza de fotos huérfanas: %d candidata(s) sin producto asociado (id: %s)',
+      orphans.length,
+      orphans.map((photo) => photo.id).join(', '),
+    );
+
     const results = await Promise.allSettled(
       orphans.map((photo) => this.deletePhotoUseCase.execute(photo.id)),
     );

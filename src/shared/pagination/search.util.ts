@@ -5,7 +5,7 @@ export const toLikePattern = (search: string): string =>
 
 export const iLikeContains = (search: string) => ILike(toLikePattern(search));
 
-export const deletedAtCondition = (status: 'active' | 'deleted' | 'all') =>
-  (status === 'deleted' ? { deletedAt: Not(IsNull()) } : {}) as FindOptionsWhere<{
+export const deletedAtCondition = (deleted: boolean) =>
+  (deleted ? { deletedAt: Not(IsNull()) } : {}) as FindOptionsWhere<{
     deletedAt: Date | null;
   }>;

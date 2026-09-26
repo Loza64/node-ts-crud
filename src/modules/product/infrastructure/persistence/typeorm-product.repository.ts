@@ -47,11 +47,11 @@ export class TypeOrmProductRepository implements ProductRepository {
     page,
     pageSize,
     search,
-    status,
+    deleted,
     categoryId,
   }: ProductFindAllParams): Promise<Page<Product>> {
     const base: FindOptionsWhere<Product> = {
-      ...deletedAtCondition(status),
+      ...deletedAtCondition(deleted),
       ...(categoryId ? { category: { id: categoryId } } : {}),
     };
 
@@ -70,7 +70,7 @@ export class TypeOrmProductRepository implements ProductRepository {
         relations: RELATIONS,
         select: BASE_SELECT,
         order: { id: 'DESC' },
-        withDeleted: status !== 'active',
+        withDeleted: deleted,
       },
     );
   }

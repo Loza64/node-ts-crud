@@ -1,4 +1,4 @@
-import { FindOptionsWhere, In, IsNull, LessThan, Raw, Repository } from 'typeorm';
+import { FindOptionsWhere, In, Raw, Repository } from 'typeorm';
 import { AppDataSource } from '../../../../shared/database/data-source';
 import { paginateRepository } from '../../../../shared/pagination/paginate.util';
 import { ListParams, Page } from '../../../../shared/pagination/pagination.types';
@@ -13,14 +13,14 @@ export class TypeOrmPhotoRepository implements PhotoRepository {
 
     const where: FindOptionsWhere<Photo>[] = search
       ? [
-          { originalFilename: iLikeContains(search) },
-          {
-            tags: Raw(
-              (alias) => `EXISTS (SELECT 1 FROM unnest(${alias}) AS tag WHERE tag ILIKE :tagPattern)`,
-              { tagPattern: toLikePattern(search) },
-            ),
-          },
-        ]
+        { originalFilename: iLikeContains(search) },
+        {
+          tags: Raw(
+            (alias) => `EXISTS (SELECT 1 FROM unnest(${alias}) AS tag WHERE tag ILIKE :tagPattern)`,
+            { tagPattern: toLikePattern(search) },
+          ),
+        },
+      ]
       : [{}];
 
     return paginateRepository(this.repo, { page, pageSize }, { where, order: { id: 'DESC' } });
@@ -55,16 +55,14 @@ export class TypeOrmPhotoRepository implements PhotoRepository {
     await this.repo.update(id, { tags });
   }
 
-  async markAttached(ids: number[]): Promise<void> {
-    if (!ids.length) return;
-    await this.repo.update({ id: In(ids) }, { attachedAt: new Date() });
-  }
-
   findOrphans(olderThan: Date): Promise<Photo[]> {
-    return this.repo.find({
-      where: { attachedAt: IsNull(), createdAt: LessThan(olderThan) },
-      order: { createdAt: 'ASC' },
-    });
+    return this.repo
+      .createQueryBuilder('photo')
+      .leftJoin('product_photos', 'pp', 'pp."photoId" = photo.id')
+      .where('pp."photoId" IS NULL')
+      .andWhere('photo.createdAt < :olderThan', { olderThan })
+      .orderBy('photo.createdAt', 'ASC')
+      .getMany();
   }
 
   async hardDelete(id: number): Promise<void> {

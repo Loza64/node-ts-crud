@@ -29,8 +29,9 @@ export const buildProductRouter = (controller: ProductController): Router => {
    *         name: search
    *         schema: { type: string }
    *       - in: query
-   *         name: status
-   *         schema: { type: string, enum: [active, deleted, all], default: active }
+   *         name: delete
+   *         description: true para listar solo los eliminados; si se omite, solo activos
+   *         schema: { type: boolean, default: false }
    *       - in: query
    *         name: category
    *         description: Filtrar por ID de categoría

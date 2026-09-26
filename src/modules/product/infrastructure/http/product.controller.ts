@@ -59,12 +59,13 @@ export class ProductController {
 
   findAll = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { page, pageSize, search, status, category } = req.validatedQuery as ProductQueryDto;
+      const { page, pageSize, search, delete: deleted, category } =
+        req.validatedQuery as ProductQueryDto;
       const result = await this.findAllProductsUseCase.execute({
         page,
         pageSize,
         search,
-        status,
+        deleted,
         categoryId: category,
       });
       res.status(200).json(buildPaginatedResponse(result, (product) => product.toPublic()));
