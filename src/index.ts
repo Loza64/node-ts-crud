@@ -3,7 +3,8 @@ import { buildContainer } from './composition-root';
 import { env } from './shared/config/env';
 import { serverLog, errorLog, swaggerLog } from './shared/logger/logger';
 import { AppDataSource } from './shared/database/data-source';
-import { registerOrphanPhotosCleanupJob } from './shared/scheduler/orphan-photos.scheduler';
+import { NodeCronScheduler } from './shared/scheduler/node-cron.scheduler';
+import { createOrphanPhotosCleanupJob } from './modules/photo/infrastructure/scheduler/orphan-photos-cleanup.job';
 
 const bootstrap = async (): Promise<void> => {
   await AppDataSource.initialize();
@@ -14,20 +15,22 @@ const bootstrap = async (): Promise<void> => {
     swaggerLog(`Available on http://localhost:${env.PORT}/api-docs`);
   });
 
-  // Container independiente solo para lo que necesita correr fuera del ciclo request/response.
   const { cleanupOrphanPhotosUseCase } = buildContainer();
-  const orphanPhotosJob = registerOrphanPhotosCleanupJob(cleanupOrphanPhotosUseCase);
+
+  const scheduler = new NodeCronScheduler();
+  scheduler.register(createOrphanPhotosCleanupJob(cleanupOrphanPhotosUseCase, env.ORPHAN_PHOTOS_CRON));
+  scheduler.start();
 
   const shutdown = async (signal: string): Promise<void> => {
     serverLog('Recibida %s, cerrando de forma ordenada...', signal);
-    orphanPhotosJob.stop();
+    scheduler.stop();
     server.close();
     await AppDataSource.destroy();
     process.exit(0);
   };
 
-  process.on('SIGINT', () => void shutdown('SIGINT'));
-  process.on('SIGTERM', () => void shutdown('SIGTERM'));
+  process.on('SIGINT', () => void shutdown('SIGINT'));  //Cerrar el deploy con  Ctrl + C
+  process.on('SIGTERM', () => void shutdown('SIGTERM')); //Cuando docker cierra el deploy
 };
 
 bootstrap().catch((err) => {

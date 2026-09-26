@@ -71,12 +71,17 @@ src/modules/<modulo>/
     └── persistence/      # Repositorios TypeORM concretos (adaptador de salida)
 ```
 
+`infrastructure/` no se limita a `http/` + `persistence/`: es "todo lo que entra o sale del
+mundo real". Por eso `photo` además tiene `infrastructure/scheduler/` — otro adaptador de
+entrada, que dispara el mismo caso de uso por tiempo en vez de por request (ver sección 10).
+
 **Regla de dependencia**: `infrastructure` → depende de → `application` → depende de → `domain`.
 Nunca al revés.
 
-- **Puerto** = interfaz en `domain/` (ej. `PhotoRepository`, `FileStorage`).
+- **Puerto** = interfaz en `domain/` (ej. `PhotoRepository`, `FileStorage`) o en `shared/` cuando
+  es un puerto transversal a todos los módulos (ej. `Scheduler`).
 - **Adaptador** = implementación concreta en `infrastructure/` (ej. `TypeOrmPhotoRepository`,
-  `CloudinaryFileStorage`).
+  `CloudinaryFileStorage`, `NodeCronScheduler`).
 
 A diferencia de una plantilla con repositorio en memoria, acá los adaptadores de persistencia
 **ya son reales**: `TypeOrmProductRepository`, `TypeOrmCategoryRepository`,
@@ -121,13 +126,13 @@ src/
 │   └── photo/
 │       ├── domain/photo.entity.ts, photo.repository.ts
 │       ├── application/upload-files, find-all, find-by-id, delete-photo, cleanup-orphan-photos + specs
-│       └── infrastructure/http/(controller|routes, incluye alias legacy /files/upload) · persistence/typeorm-photo.repository.ts
+│       └── infrastructure/http/(controller|routes, incluye alias legacy /files/upload) · persistence/typeorm-photo.repository.ts · scheduler/orphan-photos-cleanup.job.ts (+ spec)
 └── shared/
     ├── config/env.ts, express.config.ts       # Env tipado + config de CORS/JSON/Multer
     ├── database/base.entity.ts, data-source.ts, migrations/
     ├── cloudinary/cloudinary.port.ts, cloudinary.adapter.ts, cloudinary.config.ts
     ├── resilience/circuit-breaker.factory.ts, circuit-breaker.registry.ts, circuit-breaker.errors.ts
-    ├── scheduler/orphan-photos.scheduler.ts    # Cron del job de limpieza
+    ├── scheduler/scheduler.port.ts, node-cron.scheduler.ts (+ spec)   # Puerto `Scheduler`/`CronJob` + adaptador node-cron, agnóstico de cualquier job concreto
     ├── dto/id-ref.dto.ts                        # { id: number } reutilizado en relaciones
     ├── errors/AppError.ts
     ├── logger/logger.ts                         # Namespaces de `debug`
@@ -204,7 +209,7 @@ implementado.
 | Toda foto nace en estado **`pending`** (`attachedAt = null`) hasta que un producto la referencia | `Photo` entity, `CreateProductUseCase`/`UpdateProductUseCase` |
 | Borrar una foto es **irreversible y sincrónico con Cloudinary**: primero se destruye el asset remoto, y **solo si eso funciona** se borra la fila en BD. Si Cloudinary falla, la fila se conserva (queda "huérfana pero recuperable") y el error se propaga como `502`, para poder reintentar | `DeletePhotoUseCase` |
 | Búsqueda de fotos por nombre de archivo o por tag (`ILIKE`/`unnest` sobre el array `tags`) | `TypeOrmPhotoRepository.findAll` |
-| **Limpieza automática de huérfanas**: una foto `pending` con más de `ORPHAN_PHOTOS_MIN_AGE_MINUTES` desde su creación es candidata a borrado automático (ver sección 10) | `CleanupOrphanPhotosUseCase` + `orphan-photos.scheduler.ts` |
+| **Limpieza automática de huérfanas**: una foto `pending` con más de `ORPHAN_PHOTOS_MIN_AGE_MINUTES` desde su creación es candidata a borrado automático (ver sección 10) | `CleanupOrphanPhotosUseCase` + job de scheduling |
 
 ### 5.4 Resiliencia frente a Cloudinary
 
@@ -363,18 +368,44 @@ guardar, esas fotos quedan subidas a Cloudinary y persistidas en BD sin dueño.
 - El período de gracia (`ORPHAN_PHOTOS_MIN_AGE_MINUTES`, default 60) existe para no borrar una
   foto que el usuario acaba de subir y todavía está llenando el formulario.
 
-### El job (`shared/scheduler/orphan-photos.scheduler.ts`)
+### El job: puerto + adaptador + job de módulo
 
-- Usa `node-cron`, con la expresión de `ORPHAN_PHOTOS_CRON` (default `0 * * * *`, cada hora).
-- Guard `running` para que dos corridas no se pisen si una limpieza tarda más que el intervalo.
-- Se registra en `index.ts` al arrancar el servidor, y se detiene (`task.stop()`) en el shutdown
-  ordenado (`SIGINT`/`SIGTERM`).
-- `CleanupOrphanPhotosUseCase.execute()` también es invocable a mano vía
-  `POST /api/photos/cleanup-orphans` — mismo código, útil para operar o probar sin esperar al
-  cron. Devuelve `{ scanned, deleted, failed: [{ photoId, reason }] }`.
+El scheduling está separado en tres piezas (mismo patrón puerto/adaptador que `FileStorage` /
+`CloudinaryFileStorage` de la sección 9), en vez de un único archivo acoplado a `node-cron`:
+
+| Pieza | Archivo | Responsabilidad |
+|---|---|---|
+| Puerto | `shared/scheduler/scheduler.port.ts` | Interfaces `CronJob` (`name`, `cronExpression`, `preventOverlap?`, `run()`) y `Scheduler` (`register`, `start`, `stop`). No conocen `node-cron` ni ninguna otra librería. |
+| Adaptador | `shared/scheduler/node-cron.scheduler.ts` | `NodeCronScheduler implements Scheduler`: valida la expresión cron, arma el guard anti-solapamiento (genérico, aplica a cualquier `CronJob`) y loguea. Es el único archivo del proyecto que importa `node-cron`. |
+| Job de módulo | `modules/photo/infrastructure/scheduler/orphan-photos-cleanup.job.ts` | `createOrphanPhotosCleanupJob(cleanupOrphanPhotosUseCase, cronExpression)`: traduce el caso de uso a un `CronJob` simple. Vive en `photo/infrastructure` porque cumple el mismo rol que `photo.controller.ts` — es otra forma de disparar el mismo caso de uso, por tiempo en vez de por request. |
+
+Cómo se conectan, en `index.ts`:
+
+```ts
+const scheduler = new NodeCronScheduler();
+scheduler.register(createOrphanPhotosCleanupJob(cleanupOrphanPhotosUseCase, env.ORPHAN_PHOTOS_CRON));
+scheduler.start();
+```
+
+- `register()` valida la expresión de `ORPHAN_PHOTOS_CRON` (default `0 * * * *`, cada hora) y
+  arma la tarea de `node-cron`, pero **no la arranca todavía** — permite registrar varios jobs
+  antes de activarlos todos juntos.
+- `start()` recién ahí prende todos los jobs registrados hasta ese momento.
+- El guard anti-solapamiento (que dos corridas del mismo job no se pisen si una tarda más que el
+  intervalo) ya no se escribe a mano por job: lo aplica `NodeCronScheduler` para cualquier
+  `CronJob`, vía `preventOverlap` (default `true`).
+- En el shutdown (`SIGINT`/`SIGTERM`), `scheduler.stop()` detiene todos los jobs registrados.
+- `CleanupOrphanPhotosUseCase.execute()` sigue siendo invocable a mano vía
+  `POST /api/photos/cleanup-orphans` — mismo código que corre el cron, útil para operar o probar
+  sin esperar al tick. Devuelve `{ scanned, deleted, failed: [{ photoId, reason }] }`.
 - Los fallos individuales (ej. Cloudinary no responde para una foto puntual) no abortan el resto
   del lote — se recolectan con `Promise.allSettled` y se loguean, la foto simplemente se
   reintenta en la próxima corrida.
+
+Agregar un job nuevo (en cualquier módulo) es: crear su `<algo>.job.ts` en
+`infrastructure/scheduler/` de ese módulo devolviendo un `CronJob`, y sumar una línea
+`scheduler.register(...)` en `index.ts`. No hace falta tocar `NodeCronScheduler` ni conocer la
+API de `node-cron` para eso.
 
 ---
 
@@ -410,7 +441,8 @@ guardar, esas fotos quedan subidas a Cloudinary y persistidas en BD sin dueño.
    donde hace falta resolver relaciones (`findCategoryOrFail`/`findPhotosOrFail` en
    `product-references.ts`) y `deletePhotoUseCase` para soltar fotos removidas al actualizar.
 5. Arma los 3 controllers y los devuelve junto con `cleanupOrphanPhotosUseCase` (este último se
-   usa en `index.ts` para registrar el cron, fuera del ciclo request/response de Express).
+   usa en `index.ts` — envuelto en `createOrphanPhotosCleanupJob` y registrado contra un
+   `NodeCronScheduler` — fuera del ciclo request/response de Express).
 
 `app.ts` llama `buildContainer()` una vez al crear la app y monta las rutas de cada módulo bajo
 `/api` (`interfaces/http/routes.ts`).
@@ -425,11 +457,13 @@ guardar, esas fotos quedan subidas a Cloudinary y persistidas en BD sin dueño.
    solo con `DEBUG=nodets:*`) y el proceso sale con `process.exit(1)`.
 2. `app.listen(env.PORT, ...)`.
 3. Se construye **un segundo container** (`buildContainer()`) solo para extraer
-   `cleanupOrphanPhotosUseCase` y registrar el cron — así el scheduler no depende de tocar
-   `app.ts`, que sigue siendo reusable tal cual en `app.spec.ts` sin efectos secundarios de cron.
-4. **Shutdown ordenado** en `SIGINT`/`SIGTERM`: para el cron (`orphanPhotosJob.stop()`), cierra
-   el servidor HTTP (`server.close()`), destruye la conexión a la base (`AppDataSource.destroy()`)
-   y recién ahí sale del proceso.
+   `cleanupOrphanPhotosUseCase`, que se envuelve en un `CronJob`
+   (`createOrphanPhotosCleanupJob`) y se registra contra un `NodeCronScheduler`
+   (`shared/scheduler/`) — así el scheduler no depende de tocar `app.ts`, que sigue siendo
+   reusable tal cual en `app.spec.ts` sin efectos secundarios de cron.
+4. **Shutdown ordenado** en `SIGINT`/`SIGTERM`: detiene el `scheduler` (`scheduler.stop()`, para
+   todos los jobs registrados), cierra el servidor HTTP (`server.close()`), destruye la conexión
+   a la base (`AppDataSource.destroy()`) y recién ahí sale del proceso.
 
 ---
 
@@ -502,6 +536,8 @@ Jest + `ts-jest`, un `*.spec.ts` junto a cada archivo que prueba. Los que ya exi
 | `restore-product.use-case.spec.ts` | Regla "no restaurar si la categoría sigue eliminada" |
 | `delete-photo.use-case.spec.ts` | Borrado de foto: Cloudinary ok/falla, `AppError` propagado tal cual (ej. 503 del breaker) |
 | `cleanup-orphan-photos.use-case.spec.ts` | Job de limpieza: sin huérfanas, período de gracia respetado, borrado en lote, fallos parciales reportados sin abortar |
+| `node-cron.scheduler.spec.ts` | Adaptador `NodeCronScheduler`: rechaza expresiones cron inválidas, registra sin arrancar, `start()`/`stop()` activan y detienen todos los jobs registrados, guard anti-solapamiento (con y sin `preventOverlap`), no propaga la excepción si el job falla |
+| `orphan-photos-cleanup.job.spec.ts` | El job expone el nombre y la expresión cron correctos, y delega cada corrida al caso de uso |
 | `cloudinary.adapter.spec.ts` | Adaptador de Cloudinary envuelto en circuit breaker |
 | `circuit-breaker.factory.spec.ts` | Config y comportamiento del breaker en sí |
 
@@ -540,6 +576,10 @@ pnpm run test:watch
    `interfaces/http/routes.ts`.
 6. Si el módulo tiene DTOs, importarlos en `shared/swagger/schemas.ts` para que aparezcan en
    `/api-docs`.
+7. Si el módulo necesita correr algo por tiempo (no por request), agregar
+   `infrastructure/scheduler/<algo>.job.ts` devolviendo un `CronJob` (ver sección 10) y
+   registrarlo contra el `NodeCronScheduler` en `index.ts` — no hace falta tocar
+   `shared/scheduler/`.
 
 ---
 
@@ -559,4 +599,6 @@ pnpm run test:watch
   una réplica, cada instancia registra su propio cron de limpieza de fotos y podrían pisarse
   entre sí (nada grave — el `DeletePhotoUseCase` es idempotente frente a un `404`, pero es
   trabajo duplicado). En ese escenario conviene mover el cron a un proceso/worker separado o a
-  un scheduler externo que le pegue al endpoint manual.
+  un scheduler externo que le pegue al endpoint manual — gracias al puerto `Scheduler`, ese
+  cambio hoy es escribir un nuevo adaptador (ej. sobre BullMQ o un scheduler externo) sin tocar
+  `orphan-photos-cleanup.job.ts` ni el resto del wiring.
