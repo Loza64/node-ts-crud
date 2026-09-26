@@ -16,7 +16,7 @@ export class ProductController {
     private readonly restoreProductUseCase: RestoreProductUseCase,
     private readonly findAllProductsUseCase: FindAllProductsUseCase,
     private readonly findProductByIdUseCase: FindProductByIdUseCase,
-  ) {}
+  ) { }
 
   create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -59,7 +59,7 @@ export class ProductController {
 
   findAll = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { page, pageSize, search, delete: deleted, category } =
+      const { page, pageSize, search, deleted, category } =
         req.validatedQuery as ProductQueryDto;
       const result = await this.findAllProductsUseCase.execute({
         page,

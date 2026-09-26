@@ -16,7 +16,7 @@ export class CategoryController {
     private readonly restoreCategoryUseCase: RestoreCategoryUseCase,
     private readonly findAllCategoriesUseCase: FindAllCategoriesUseCase,
     private readonly findCategoryByIdUseCase: FindCategoryByIdUseCase,
-  ) {}
+  ) { }
 
   create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -59,7 +59,7 @@ export class CategoryController {
 
   findAll = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { page, pageSize, search, delete: deleted } = req.validatedQuery as SoftDeleteQueryDto;
+      const { page, pageSize, search, deleted } = req.validatedQuery as SoftDeleteQueryDto;
       const result = await this.findAllCategoriesUseCase.execute({ page, pageSize, search, deleted });
       res.status(200).json(buildPaginatedResponse(result, (category) => category.toPublic()));
     } catch (err) {
