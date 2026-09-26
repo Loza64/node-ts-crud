@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { createRequire } from 'module';
 import { validationMetadatasToSchemas } from 'class-validator-jsonschema';
 
 import '../dto/id-ref.dto';
@@ -9,14 +10,15 @@ import '../../modules/product/application/create-product.dto';
 import '../../modules/product/application/update-product.dto';
 import '../../modules/product/application/product-query.dto';
 
-const getClassTransformerMetadataStorage = (): any => {
+const requireModule = createRequire(__filename);
+
+const getClassTransformerMetadataStorage = () => {
   const candidatePaths = ['class-transformer/cjs/storage', 'class-transformer/storage', 'class-transformer/esm5/storage'];
 
   for (const path of candidatePaths) {
     try {
-
-      return require(path).defaultMetadataStorage;
-    } catch {}
+      return requireModule(path).defaultMetadataStorage;
+    } catch { }
   }
 
   return undefined;
