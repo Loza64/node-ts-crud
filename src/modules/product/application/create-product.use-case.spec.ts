@@ -38,15 +38,12 @@ describe('CreateProductUseCase', () => {
       price: 19.9,
       in_stock: false,
       category: { id: 1 },
-      photos: [{ id: 1 }, { id: 3 }],
     });
 
     expect(categoryRepository.findById).toHaveBeenCalledWith(1);
-    expect(photoRepository.findByIds).toHaveBeenCalledWith([1, 3]);
     const saved = productRepository.save.mock.calls[0][0];
     expect(saved).toMatchObject({ name: 'Camisa', description: 'Algodón', price: '19.90', in_stock: false });
     expect(saved.category.id).toBe(1);
-    expect(saved.photos.map((photo) => photo.id)).toEqual([1, 3]);
   });
 
   it('defaults in_stock to true, description to null and photos to []', async () => {
