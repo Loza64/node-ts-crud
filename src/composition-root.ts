@@ -67,7 +67,7 @@ export const buildContainer = () => {
   );
 
   const createProductUseCase = new CreateProductUseCase(productRepository, categoryRepository, photoRepository);
-  const updateProductUseCase = new UpdateProductUseCase(productRepository, categoryRepository, photoRepository, deletePhotoUseCase);
+  const updateProductUseCase = new UpdateProductUseCase(productRepository, categoryRepository, photoRepository);
   const deleteProductUseCase = new DeleteProductUseCase(productRepository);
   const restoreProductUseCase = new RestoreProductUseCase(productRepository, categoryRepository);
   const findAllProductsUseCase = new FindAllProductsUseCase(productRepository);

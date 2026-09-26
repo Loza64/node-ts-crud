@@ -22,6 +22,5 @@ export interface CloudinaryUploadResult {
 export interface FileStorage {
   upload(file: Express.Multer.File, folder: string): Promise<CloudinaryUploadResult>;
   destroy(publicId: string, resourceType?: string): Promise<void>;
-
   setTags(publicId: string, tags: string[], resourceType?: string): Promise<void>;
 }

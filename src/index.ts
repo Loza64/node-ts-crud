@@ -1,4 +1,4 @@
-import app from './app';
+import { createApp } from './app';
 import { buildContainer } from './composition-root';
 import { env } from './shared/config/env';
 import { serverLog, errorLog, swaggerLog } from './shared/logger/logger';
@@ -10,12 +10,15 @@ const bootstrap = async (): Promise<void> => {
   await AppDataSource.initialize();
   serverLog('Data source initialized');
 
+  const container = buildContainer();
+  const app = createApp(container);
+
   const server = app.listen(env.PORT, () => {
     serverLog(`Running on http://localhost:${env.PORT}`);
     swaggerLog(`Available on http://localhost:${env.PORT}/api-docs`);
   });
 
-  const { cleanupOrphanPhotosUseCase } = buildContainer();
+  const { cleanupOrphanPhotosUseCase } = container;
 
   const scheduler = new NodeCronScheduler();
   scheduler.register(createOrphanPhotosCleanupJob(cleanupOrphanPhotosUseCase, env.ORPHAN_PHOTOS_CRON));
