@@ -38,6 +38,7 @@
     "typeorm": "^1.1.1"
   },
   "devDependencies": {
+    "@flydotio/dockerfile": "^0.7.13",
     "@types/cors": "^2.8.19",
     "@types/debug": "^4.1.13",
     "@types/express": "^5.0.6",
@@ -61,5 +62,6 @@
     "tsc-alias": "^1.9.1",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3"
-  }
+  },
+  "packageManager": "pnpm@12.14.0+sha512.c18ba6d87993d3d164cb5e8948f32b2c06ee854487e06cd8d86781342fb3e5bb4634367034711e86802baa9c37bea906ce1929ad08d70884c97d801df13389a6"
 }
