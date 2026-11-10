@@ -18,10 +18,13 @@ const bootstrap = async (): Promise<void> => {
     swaggerLog(`Available on http://localhost:${env.PORT}/api-docs`);
   });
 
-  const { cleanupOrphanPhotosUseCase } = container;
-
   const scheduler = new NodeCronScheduler();
-  scheduler.register(createOrphanPhotosCleanupJob(cleanupOrphanPhotosUseCase, env.ORPHAN_PHOTOS_CRON));
+  scheduler.register(
+    createOrphanPhotosCleanupJob(
+      container.resolve('cleanupOrphanPhotosUseCase'),
+      env.ORPHAN_PHOTOS_CRON,
+    ),
+  );
   scheduler.start();
 
   const shutdown = async (signal: string): Promise<void> => {

@@ -95,9 +95,9 @@ la lógica de negocio con mocks, sin levantar Express ni Postgres (ver `*.spec.t
 
 ### Composition Root
 
-`src/composition-root.ts` es el único archivo que conoce simultáneamente las interfaces y sus
-implementaciones concretas: instancia repositorios/adaptadores e inyecta "a mano" (constructor
-injection, sin framework de DI) en use cases y controllers. Ver sección 12.
+`src/composition-root.ts` registra las implementaciones concretas y los valores de configuración
+en Awilix. Los use cases y controllers reciben sus dependencias por constructor; el contenedor las
+resuelve usando los nombres de los parámetros. Ver sección 12.
 
 ---
 
@@ -108,7 +108,7 @@ src/
 ├── @types/express/index.d.ts        # Extiende Request: `files?`, `validatedQuery?`
 ├── app.ts                           # createApp(): arma Express (helmet, cors, json, morgan, rutas, errorHandler)
 ├── app.spec.ts                      # Test de integración (supertest) contra la app real
-├── composition-root.ts              # DI manual: instancia repos / use cases / controllers
+├── composition-root.ts              # Registros Awilix y tipos del contenedor
 ├── index.ts                         # Entry point: conecta la BD, levanta el server, registra el cron, shutdown ordenado
 ├── swagger.ts                       # Arma el spec de swagger-jsdoc a partir de las rutas y los DTOs
 ├── interfaces/http/routes.ts        # Router raíz /api, monta cada módulo
@@ -430,22 +430,14 @@ API de `node-cron` para eso.
 
 `src/composition-root.ts` → `buildContainer()`:
 
-1. Instancia los 3 repositorios TypeORM (`category`, `photo`, `product`), todos sobre el mismo
-   `AppDataSource`.
-2. Instancia `CloudinaryFileStorage` y todos los use cases de `photo`, incluido
-   `CleanupOrphanPhotosUseCase` (recibe el repo, `DeletePhotoUseCase` y
-   `env.ORPHAN_PHOTOS_MIN_AGE_MINUTES`).
-3. Instancia los use cases de `category`, inyectando `productRepository` donde hace falta
-   validar reglas cruzadas (`DeleteCategoryUseCase`).
-4. Instancia los use cases de `product`, inyectando `categoryRepository`/`photoRepository`
-   donde hace falta resolver relaciones (`findCategoryOrFail`/`findPhotosOrFail` en
-   `product-references.ts`) y `deletePhotoUseCase` para soltar fotos removidas al actualizar.
-5. Arma los 3 controllers y los devuelve junto con `cleanupOrphanPhotosUseCase` (este último se
-   usa en `index.ts` — envuelto en `createOrphanPhotosCleanupJob` y registrado contra un
-   `NodeCronScheduler` — fuera del ciclo request/response de Express).
+registra repositorios, adaptadores, casos de uso, controllers y configuración como resolvers
+singleton. Awilix construye las dependencias bajo demanda usando `InjectionMode.CLASSIC`: los
+nombres de los parámetros del constructor deben coincidir con las claves del `Cradle` y los
+registros del contenedor. `Cradle` mantiene tipada la lista de resolvers.
 
-`app.ts` llama `buildContainer()` una vez al crear la app y monta las rutas de cada módulo bajo
-`/api` (`interfaces/http/routes.ts`).
+`index.ts` crea un contenedor para el proceso y lo comparte con `createApp()` y el scheduler.
+`interfaces/http/routes.ts` resuelve de ese contenedor los controllers requeridos por los routers.
+Las pruebas que llaman `createApp()` sin argumentos obtienen un contenedor aislado por llamada.
 
 ---
 
@@ -456,8 +448,7 @@ API de `node-cron` para eso.
 1. `AppDataSource.initialize()` — conecta a Postgres. Si falla, se loguea (`errorLog`, visible
    solo con `DEBUG=nodets:*`) y el proceso sale con `process.exit(1)`.
 2. `app.listen(env.PORT, ...)`.
-3. Se construye **un segundo container** (`buildContainer()`) solo para extraer
-   `cleanupOrphanPhotosUseCase`, que se envuelve en un `CronJob`
+3. El mismo contenedor de la app resuelve `cleanupOrphanPhotosUseCase`, que se envuelve en un `CronJob`
    (`createOrphanPhotosCleanupJob`) y se registra contra un `NodeCronScheduler`
    (`shared/scheduler/`) — así el scheduler no depende de tocar `app.ts`, que sigue siendo
    reusable tal cual en `app.spec.ts` sin efectos secundarios de cron.
@@ -572,8 +563,9 @@ pnpm run test:watch
    `AppDataSource.getRepository(<Entidad>)`.
 4. `infrastructure/http/<modulo>.controller.ts` + `<modulo>.routes.ts` (con los bloques
    `@swagger` correspondientes).
-5. Registrar todo en `composition-root.ts` (instanciar e inyectar) y montar el router en
-   `interfaces/http/routes.ts`.
+5. Registrar las clases y valores del módulo en `Cradle` y en `composition-root.ts`; Awilix
+   inyecta los constructores según el nombre de sus parámetros. Montar el router en
+   `interfaces/http/routes.ts` y resolver allí el controller desde el contenedor.
 6. Si el módulo tiene DTOs, importarlos en `shared/swagger/schemas.ts` para que aparezcan en
    `/api-docs`.
 7. Si el módulo necesita correr algo por tiempo (no por request), agregar

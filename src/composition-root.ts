@@ -1,3 +1,11 @@
+import {
+  asClass,
+  asValue,
+  createContainer,
+  InjectionMode,
+  Lifetime,
+  type AwilixContainer,
+} from 'awilix';
 import { CloudinaryFileStorage } from './shared/cloudinary/cloudinary.adapter';
 import { env } from './shared/config/env';
 
@@ -27,66 +35,75 @@ import { FindAllCategoriesUseCase } from './modules/category/application/find-al
 import { FindCategoryByIdUseCase } from './modules/category/application/find-category-by-id.use-case';
 import { CategoryController } from './modules/category/infrastructure/http/category.controller';
 
-export const buildContainer = () => {
+export interface Cradle {
+  categoryRepository: TypeOrmCategoryRepository;
+  photoRepository: TypeOrmPhotoRepository;
+  productRepository: TypeOrmProductRepository;
+  fileStorage: CloudinaryFileStorage;
+  folder: string;
+  minPendingAgeMinutes: number;
+  uploadFilesUseCase: UploadFilesUseCase;
+  findAllPhotosUseCase: FindAllPhotosUseCase;
+  findPhotoByIdUseCase: FindPhotoByIdUseCase;
+  deletePhotoUseCase: DeletePhotoUseCase;
+  cleanupOrphanPhotosUseCase: CleanupOrphanPhotosUseCase;
+  photoController: PhotoController;
+  createCategoryUseCase: CreateCategoryUseCase;
+  updateCategoryUseCase: UpdateCategoryUseCase;
+  deleteCategoryUseCase: DeleteCategoryUseCase;
+  restoreCategoryUseCase: RestoreCategoryUseCase;
+  findAllCategoriesUseCase: FindAllCategoriesUseCase;
+  findCategoryByIdUseCase: FindCategoryByIdUseCase;
+  categoryController: CategoryController;
+  createProductUseCase: CreateProductUseCase;
+  updateProductUseCase: UpdateProductUseCase;
+  deleteProductUseCase: DeleteProductUseCase;
+  restoreProductUseCase: RestoreProductUseCase;
+  findAllProductsUseCase: FindAllProductsUseCase;
+  findProductByIdUseCase: FindProductByIdUseCase;
+  productController: ProductController;
+}
 
-  const categoryRepository = new TypeOrmCategoryRepository();
-  const photoRepository = new TypeOrmPhotoRepository();
-  const productRepository = new TypeOrmProductRepository();
+export type Container = AwilixContainer<Cradle>;
 
-  const fileStorage = new CloudinaryFileStorage();
-  const uploadFilesUseCase = new UploadFilesUseCase(fileStorage, photoRepository, env.CLOUDINARY_FOLDER);
-  const findAllPhotosUseCase = new FindAllPhotosUseCase(photoRepository);
-  const findPhotoByIdUseCase = new FindPhotoByIdUseCase(photoRepository);
-  const deletePhotoUseCase = new DeletePhotoUseCase(photoRepository, fileStorage);
-  const cleanupOrphanPhotosUseCase = new CleanupOrphanPhotosUseCase(
-    photoRepository,
-    deletePhotoUseCase,
-    env.ORPHAN_PHOTOS_MIN_AGE_MINUTES,
-  );
-  const photoController = new PhotoController(
-    uploadFilesUseCase,
-    findAllPhotosUseCase,
-    findPhotoByIdUseCase,
-    deletePhotoUseCase,
-    cleanupOrphanPhotosUseCase,
-  );
+export const buildContainer = (): Container => {
+  // CLASSIC resolves constructor dependencies by their parameter names.
+  const container = createContainer<Cradle>({
+    injectionMode: InjectionMode.CLASSIC,
+  });
 
-  const createCategoryUseCase = new CreateCategoryUseCase(categoryRepository);
-  const updateCategoryUseCase = new UpdateCategoryUseCase(categoryRepository);
-  const deleteCategoryUseCase = new DeleteCategoryUseCase(categoryRepository, productRepository);
-  const restoreCategoryUseCase = new RestoreCategoryUseCase(categoryRepository);
-  const findAllCategoriesUseCase = new FindAllCategoriesUseCase(categoryRepository);
-  const findCategoryByIdUseCase = new FindCategoryByIdUseCase(categoryRepository);
-  const categoryController = new CategoryController(
-    createCategoryUseCase,
-    updateCategoryUseCase,
-    deleteCategoryUseCase,
-    restoreCategoryUseCase,
-    findAllCategoriesUseCase,
-    findCategoryByIdUseCase,
-  );
+  container.register({
+    categoryRepository: asClass(TypeOrmCategoryRepository, { lifetime: Lifetime.SINGLETON }),
+    photoRepository: asClass(TypeOrmPhotoRepository, { lifetime: Lifetime.SINGLETON }),
+    productRepository: asClass(TypeOrmProductRepository, { lifetime: Lifetime.SINGLETON }),
+    fileStorage: asClass(CloudinaryFileStorage, { lifetime: Lifetime.SINGLETON }),
 
-  const createProductUseCase = new CreateProductUseCase(productRepository, categoryRepository, photoRepository);
-  const updateProductUseCase = new UpdateProductUseCase(productRepository, categoryRepository, photoRepository);
-  const deleteProductUseCase = new DeleteProductUseCase(productRepository);
-  const restoreProductUseCase = new RestoreProductUseCase(productRepository, categoryRepository);
-  const findAllProductsUseCase = new FindAllProductsUseCase(productRepository);
-  const findProductByIdUseCase = new FindProductByIdUseCase(productRepository);
-  const productController = new ProductController(
-    createProductUseCase,
-    updateProductUseCase,
-    deleteProductUseCase,
-    restoreProductUseCase,
-    findAllProductsUseCase,
-    findProductByIdUseCase,
-  );
+    uploadFilesUseCase: asClass(UploadFilesUseCase, { lifetime: Lifetime.SINGLETON }),
+    findAllPhotosUseCase: asClass(FindAllPhotosUseCase, { lifetime: Lifetime.SINGLETON }),
+    findPhotoByIdUseCase: asClass(FindPhotoByIdUseCase, { lifetime: Lifetime.SINGLETON }),
+    deletePhotoUseCase: asClass(DeletePhotoUseCase, { lifetime: Lifetime.SINGLETON }),
+    cleanupOrphanPhotosUseCase: asClass(CleanupOrphanPhotosUseCase, { lifetime: Lifetime.SINGLETON }),
+    photoController: asClass(PhotoController, { lifetime: Lifetime.SINGLETON }),
 
-  return {
-    photoController,
-    productController,
-    categoryController,
-    cleanupOrphanPhotosUseCase,
-  };
+    createCategoryUseCase: asClass(CreateCategoryUseCase, { lifetime: Lifetime.SINGLETON }),
+    updateCategoryUseCase: asClass(UpdateCategoryUseCase, { lifetime: Lifetime.SINGLETON }),
+    deleteCategoryUseCase: asClass(DeleteCategoryUseCase, { lifetime: Lifetime.SINGLETON }),
+    restoreCategoryUseCase: asClass(RestoreCategoryUseCase, { lifetime: Lifetime.SINGLETON }),
+    findAllCategoriesUseCase: asClass(FindAllCategoriesUseCase, { lifetime: Lifetime.SINGLETON }),
+    findCategoryByIdUseCase: asClass(FindCategoryByIdUseCase, { lifetime: Lifetime.SINGLETON }),
+    categoryController: asClass(CategoryController, { lifetime: Lifetime.SINGLETON }),
+
+    createProductUseCase: asClass(CreateProductUseCase, { lifetime: Lifetime.SINGLETON }),
+    updateProductUseCase: asClass(UpdateProductUseCase, { lifetime: Lifetime.SINGLETON }),
+    deleteProductUseCase: asClass(DeleteProductUseCase, { lifetime: Lifetime.SINGLETON }),
+    restoreProductUseCase: asClass(RestoreProductUseCase, { lifetime: Lifetime.SINGLETON }),
+    findAllProductsUseCase: asClass(FindAllProductsUseCase, { lifetime: Lifetime.SINGLETON }),
+    findProductByIdUseCase: asClass(FindProductByIdUseCase, { lifetime: Lifetime.SINGLETON }),
+    productController: asClass(ProductController, { lifetime: Lifetime.SINGLETON }),
+
+    folder: asValue(env.CLOUDINARY_FOLDER),
+    minPendingAgeMinutes: asValue(env.ORPHAN_PHOTOS_MIN_AGE_MINUTES),
+  });
+
+  return container;
 };
-
-export type Container = ReturnType<typeof buildContainer>;

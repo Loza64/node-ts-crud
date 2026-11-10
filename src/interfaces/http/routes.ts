@@ -9,10 +9,10 @@ export const buildApiRouter = (container: Container): Router => {
   const router = Router();
 
   router.use('/health', healthRoutes);
-  router.use('/products', buildProductRouter(container.productController));
-  router.use('/categories', buildCategoryRouter(container.categoryController));
-  router.use('/photos', buildPhotoRouter(container.photoController));
-  router.use('/files', buildLegacyFileRouter(container.photoController));
+  router.use('/products', buildProductRouter(container.resolve('productController')));
+  router.use('/categories', buildCategoryRouter(container.resolve('categoryController')));
+  router.use('/photos', buildPhotoRouter(container.resolve('photoController')));
+  router.use('/files', buildLegacyFileRouter(container.resolve('photoController')));
 
   return router;
 };
