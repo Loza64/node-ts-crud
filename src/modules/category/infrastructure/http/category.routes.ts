@@ -29,8 +29,8 @@ export const buildCategoryRouter = (controller: CategoryController): Router => {
    *         name: search
    *         schema: { type: string }
    *       - in: query
-   *         name: delete
-   *         description: true para listar solo los eliminados; si se omite, solo activos
+   *         name: deleted
+   *         description: true para listar solo las eliminadas; false (o si se omite), solo activas
    *         schema: { type: boolean, default: false }
    *     responses:
    *       200:
@@ -48,7 +48,7 @@ export const buildCategoryRouter = (controller: CategoryController): Router => {
    *       - in: path
    *         name: id
    *         required: true
-   *         schema: { type: integer }
+   *         schema: { type: integer, minimum: 1, maximum: 2147483647 }
    *     responses:
    *       200:
    *         description: Categoría encontrada
@@ -87,7 +87,7 @@ export const buildCategoryRouter = (controller: CategoryController): Router => {
    *       - in: path
    *         name: id
    *         required: true
-   *         schema: { type: integer }
+   *         schema: { type: integer, minimum: 1, maximum: 2147483647 }
    *     requestBody:
    *       required: true
    *       content:
@@ -114,7 +114,7 @@ export const buildCategoryRouter = (controller: CategoryController): Router => {
    *       - in: path
    *         name: id
    *         required: true
-   *         schema: { type: integer }
+   *         schema: { type: integer, minimum: 1, maximum: 2147483647 }
    *     responses:
    *       200:
    *         description: Categoría restaurada
@@ -133,7 +133,7 @@ export const buildCategoryRouter = (controller: CategoryController): Router => {
    *       - in: path
    *         name: id
    *         required: true
-   *         schema: { type: integer }
+   *         schema: { type: integer, minimum: 1, maximum: 2147483647 }
    *     responses:
    *       204:
    *         description: Categoría eliminada

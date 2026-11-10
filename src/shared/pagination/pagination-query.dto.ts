@@ -26,7 +26,11 @@ export class SearchQueryDto extends PaginationQueryDto {
 
 export class SoftDeleteQueryDto extends SearchQueryDto {
   @IsOptional()
-  @Transform(({ value }) => value === true || value === 'true')
+  @Transform(({ value }) => {
+    if (value === true || value === 'true') return true;
+    if (value === false || value === 'false') return false;
+    return value;
+  })
   @IsBoolean()
   deleted: boolean = false;
 }

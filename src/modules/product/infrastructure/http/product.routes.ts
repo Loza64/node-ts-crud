@@ -29,13 +29,13 @@ export const buildProductRouter = (controller: ProductController): Router => {
    *         name: search
    *         schema: { type: string }
    *       - in: query
-   *         name: delete
-   *         description: true para listar solo los eliminados; si se omite, solo activos
+   *         name: deleted
+   *         description: true para listar solo los eliminados; false (o si se omite), solo activos
    *         schema: { type: boolean, default: false }
    *       - in: query
    *         name: category
    *         description: Filtrar por ID de categoría
-   *         schema: { type: integer }
+   *         schema: { type: integer, minimum: 1, maximum: 2147483647 }
    *     responses:
    *       200:
    *         description: Listado paginado de productos
@@ -52,7 +52,7 @@ export const buildProductRouter = (controller: ProductController): Router => {
    *       - in: path
    *         name: id
    *         required: true
-   *         schema: { type: integer }
+   *         schema: { type: integer, minimum: 1, maximum: 2147483647 }
    *     responses:
    *       200:
    *         description: Producto encontrado
@@ -91,7 +91,7 @@ export const buildProductRouter = (controller: ProductController): Router => {
    *       - in: path
    *         name: id
    *         required: true
-   *         schema: { type: integer }
+   *         schema: { type: integer, minimum: 1, maximum: 2147483647 }
    *     requestBody:
    *       required: true
    *       content:
@@ -118,7 +118,7 @@ export const buildProductRouter = (controller: ProductController): Router => {
    *       - in: path
    *         name: id
    *         required: true
-   *         schema: { type: integer }
+   *         schema: { type: integer, minimum: 1, maximum: 2147483647 }
    *     responses:
    *       200:
    *         description: Producto restaurado
@@ -137,7 +137,7 @@ export const buildProductRouter = (controller: ProductController): Router => {
    *       - in: path
    *         name: id
    *         required: true
-   *         schema: { type: integer }
+   *         schema: { type: integer, minimum: 1, maximum: 2147483647 }
    *     responses:
    *       204:
    *         description: Producto eliminado

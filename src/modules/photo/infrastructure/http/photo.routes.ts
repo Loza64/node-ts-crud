@@ -42,7 +42,7 @@ export const buildPhotoRouter = (controller: PhotoController): Router => {
    *       - in: path
    *         name: id
    *         required: true
-   *         schema: { type: integer }
+   *         schema: { type: integer, minimum: 1, maximum: 2147483647 }
    *     responses:
    *       200:
    *         description: Foto encontrada
@@ -103,7 +103,7 @@ export const buildPhotoRouter = (controller: PhotoController): Router => {
    *       - in: path
    *         name: id
    *         required: true
-   *         schema: { type: integer }
+   *         schema: { type: integer, minimum: 1, maximum: 2147483647 }
    *     responses:
    *       204:
    *         description: Foto eliminada
